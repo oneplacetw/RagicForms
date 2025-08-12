@@ -9,7 +9,7 @@
   <!-- Open Graph 預覽 -->
   <meta property="og:title" content="屋主需求">
   <meta property="og:description" content="點擊此連結填寫需求">
-  <meta property="og:url" content="https://liff.line.me/2006833424-0nQE8Jgd">
+  <meta property="og:url" content="https://liff.line.me/2006833424-920EB8ra">
   <meta property="og:type" content="website">
 
   <style>
@@ -58,7 +58,7 @@
 <script>
   async function main() {
     try {
-      await liff.init({ liffId: "2006833424-0nQE8Jgd" });
+      await liff.init({ liffId: "2006833424-920EB8ra" });
       await liff.ready;
 
       if (!liff.isLoggedIn()) {
@@ -69,10 +69,9 @@
       const profile = await liff.getProfile();
       const uid = profile.userId;
       const nickname = profile.displayName;
-      const email = liff.getDecodedIDToken()?.email || "";
 
       // ✅ Ragic 表單網址（已啟用預填功能）
-      const ragicUrl = `https://ap13.ragic.com/OnePlaceLiving/development-department/1?webview&webaction=form&ver=new&version=2&pfv3004753=${email}&pfv1002801=${uid}&pfv1010838=${encodeURIComponent(nickname)}`;
+      const ragicUrl = `https://ap13.ragic.com/OnePlaceLiving/development-department/1?webview&webaction=form&ver=new&version=2&pfv1002801=${uid}&pfv1010838=${encodeURIComponent(nickname)}`;
 
       // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
       liff.openWindow({
