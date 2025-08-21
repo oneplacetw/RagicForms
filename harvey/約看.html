@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting...</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Open Graph 預覽 -->
+  <meta property="og:title" content="預約看房表">
+  <meta property="og:description" content="嗨👋填寫一下，我們將會盡快回覆">
+  <meta property="og:url" content="https://liff.line.me/2006833424-0nQE8Jgd">
+  <meta property="og:type" content="website">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .logo-container {
+      position: relative;
+      width: 280px;
+      height: 156px; /* 使用實際圖片高度 */
+      max-width: 90vw; /* 響應式設計 */
+    }
+    .green-logo, .gray-logo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* 保持比例 */
+      display: block;
+    }
+    .gray-logo {
+      z-index: 2; /* 確保在上層 */
+      clip-path: inset(0 100% 0 0);
+      animation: revealLogo 1s ease-out forwards;
+      animation-delay: 0.5s; /* 延遲開始動畫 */
+    }
+    .green-logo {
+      z-index: 1; /* 確保在下層 */
+    }
+    @keyframes revealLogo {
+      0% { clip-path: inset(0 100% 0 0); }
+      100% { clip-path: inset(0 0% 0 0); }
+    }
+    </style>
+</head>
+<body>
+<div class="logo-container">
+  <img class="gray-logo" src="../gray.png" alt="Logo Gray">
+  <img class="green-logo" src="../green.png" alt="Logo Green">
+</div>
+
+<script>
+  async function main() {
+    try {
+      await liff.init({ liffId: "2006833424-0nQE8Jgd" });
+      await liff.ready;
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      const uid = profile.userId;
+      const nickname = profile.displayName;
+
+      // ✅ Ragic 表單網址（已啟用預填功能）
+      const ragicUrl = `https://https://ap13.ragic.com/OnePlaceLiving/harvey/3?webview&webaction=form&ver=new&version=2&pfv1014902=${uid}&pfv1012145=${encodeURIComponent(nickname)}`;
+
+      // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
+      liff.openWindow({
+        url: ragicUrl,
+        external: true
+      });
+
+    } catch (e) {
+      document.querySelector('.logo-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
+      console.error(e);
+    }
+  }
+
+  main();
+</script>
+
+
+</body>
+</html>
