@@ -22,12 +22,13 @@
       justify-content: center;
       align-items: center;
       box-sizing: border-box;
+      flex-direction: column;
     }
     .logo-container {
       position: relative;
       width: 280px;
-      height: 156px; /* 使用實際圖片高度 */
-      max-width: 90vw; /* 響應式設計 */
+      height: 156px;
+      max-width: 90vw;
     }
     .green-logo, .gray-logo {
       position: absolute;
@@ -35,66 +36,85 @@
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain; /* 保持比例 */
+      object-fit: contain;
       display: block;
     }
     .gray-logo {
-      z-index: 2; /* 確保在上層 */
+      z-index: 2;
       clip-path: inset(0 100% 0 0);
       animation: revealLogo 1s ease-out forwards;
-      animation-delay: 0.5s; /* 延遲開始動畫 */
+      animation-delay: 0.5s;
     }
     .green-logo {
-      z-index: 1; /* 確保在下層 */
+      z-index: 1;
     }
     @keyframes revealLogo {
       0% { clip-path: inset(0 100% 0 0); }
       100% { clip-path: inset(0 0% 0 0); }
     }
-    </style>
+    .redirect-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #06C755;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .redirect-button:hover {
+      background-color: #05a644;
+    }
+  </style>
 </head>
 <body>
-<div class="logo-container">
-  <img class="gray-logo" src="../gray.png" alt="Logo Gray">
-  <img class="green-logo" src="../green.png" alt="Logo Green">
-</div>
+  <div class="logo-container">
+    <img class="gray-logo" src="../gray.png" alt="Logo Gray">
+    <img class="green-logo" src="../green.png" alt="Logo Green">
+  </div>
+  <button class="redirect-button" onclick="redirectToRagic()">前往預約表單</button>
 
-<script>
-  async function main() {
-    try {
-      await liff.init({ liffId: "2006833424-0nQE8Jgd" });
-      await liff.ready;
+  <script>
+    let ragicUrl = '';
 
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
+    async function main() {
+      try {
+        await liff.init({ liffId: "2006833424-0nQE8Jgd" });
+        await liff.ready;
+
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: 'https://r-forms.oneplace.com.tw/harvey_約看/index.html' });
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        const uid = profile.userId;
+        const nickname = profile.displayName;
+
+        // 儲存 Ragic 表單 URL
+        ragicUrl = `https://ap13.ragic.com/OnePlaceLiving/harvey/3?webview&webaction=form&ver=new&version=2&pfv1014902=${uid}&pfv1012145=${encodeURIComponent(nickname)}`;
+      } catch (e) {
+        document.querySelector('.logo-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
+        console.error(e);
       }
-
-      const profile = await liff.getProfile();
-      const uid = profile.userId;
-      const nickname = profile.displayName;
-
-      // ✅ Ragic 表單網址（已啟用預填功能）
-      const ragicUrl = `https://ap13.ragic.com/OnePlaceLiving/harvey/3?webview&webaction=form&ver=new&version=2&pfv1014902=${uid}&pfv1012145=${encodeURIComponent(nickname)}`;
-
-      // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
-      liff.openWindow({
-        url: ragicUrl,
-        external: true
-      });
-
-            setTimeout(() => {
-        liff.closeWindow();
-      }, 1000); // 半秒後關閉 LIFF
-
-    } catch (e) {
-      document.querySelector('.loading-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
-      console.error(e);
     }
-  }
 
-  main();
-</script>
+    function redirectToRagic() {
+      if (ragicUrl) {
+        liff.openWindow({
+          url: ragicUrl,
+          external: true
+        });
+        setTimeout(() => {
+          liff.closeWindow();
+        }, 1000);
+      } else {
+        document.querySelector('.logo-container').innerHTML = "<p>表單載入失敗，請重試</p>";
+      }
+    }
 
+    main();
+  </script>
 </body>
 </html>
