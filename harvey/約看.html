@@ -62,42 +62,113 @@
 <script>
   async function main() {
     try {
-      await liff.init({ liffId: "2006833424-0nQE8Jgd" });
-      await liff.ready;
-      
-      if (!liff.isLoggedIn()) {
-        // 儲存當前頁面 URL，登入後會回到這裡
-        liff.login({ redirectUri: window.location.href });
+      // 🔥 關鍵修正：檢查是否在 LINE 環境中
+      if (typeof liff === 'undefined') {
+        // 如果 LIFF SDK 未載入，導向到 LIFF URL
+        console.log('LIFF SDK 未載入，導向 LIFF URL');
+        window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
         return;
       }
       
+      await liff.init({ liffId: "2006833424-0nQE8Jgd" });
+      await liff.ready;
+      
+      // 🔥 額外檢查：如果不在 LIFF 環境中，導向 LIFF URL
+      if (!liff.isInClient() && !liff.isLoggedIn()) {
+        console.log('不在 LIFF 環境中，導向 LIFF URL');
+        window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
+        return;
+      }
+      
+      // 檢查是否是從登入頁面返回
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasLoginCallback = urlParams.has('liff.state') || urlParams.has('code') || urlParams.has('state');
+      
+      console.log('登入狀態:', liff.isLoggedIn());
+      console.log('URL參數:', window.location.search);
+      console.log('是否為登入返回:', hasLoginCallback);
+      
+      if (!liff.isLoggedIn()) {
+        if (hasLoginCallback) {
+          // 如果是登入返回但尚未完成，等待一秒再重試
+          console.log('等待登入完成...');
+          setTimeout(() => main(), 1000);
+          return;
+        }
+        console.log('開始登入流程');
+        liff.login();
+        return;
+      }
+      
+      console.log('已登入，開始取得用戶資料');
       const profile = await liff.getProfile();
       const uid = profile.userId;
       const nickname = profile.displayName;
       
+      console.log('用戶ID:', uid);
+      console.log('用戶名稱:', nickname);
+      
       // ✅ Ragic 表單網址（已啟用預填功能）
       const ragicUrl = `https://ap13.ragic.com/OnePlaceLiving/harvey/3?webview&webaction=form&ver=new&version=2&pfv1014902=${uid}&pfv1012145=${encodeURIComponent(nickname)}`;
       
-      // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
-      liff.openWindow({
-        url: ragicUrl,
-        external: true
-      });
+      console.log('即將開啟:', ragicUrl);
       
-      // 延遲關閉 LIFF 視窗
+      // 檢測是否為手機裝置
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        console.log('偵測到手機裝置，使用強制外部開啟');
+        // 手機版：先嘗試 LIFF openWindow，然後備用 window.open
+        try {
+          liff.openWindow({
+            url: ragicUrl,
+            external: true
+          });
+          
+          // 備用方案：直接使用 window.open
+          setTimeout(() => {
+            window.open(ragicUrl, '_blank', 'noopener,noreferrer');
+          }, 500);
+          
+          // 如果還是沒用，直接跳轉
+          setTimeout(() => {
+            window.location.href = ragicUrl;
+          }, 1500);
+          
+        } catch (error) {
+          console.log('LIFF openWindow 失敗，使用直接跳轉:', error);
+          window.location.href = ragicUrl;
+        }
+      } else {
+        console.log('偵測到桌面裝置，使用一般開啟方式');
+        // 桌面版：使用原本的方式
+        liff.openWindow({
+          url: ragicUrl,
+          external: true
+        });
+      }
+      
+      // 延遲關閉 LIFF 視窗（手機版可能需要更長時間）
       setTimeout(() => {
-        liff.closeWindow();
-      }, 1000);
+        if (liff.isInClient()) {
+          liff.closeWindow();
+        }
+      }, isMobile ? 3000 : 1000);
       
     } catch (e) {
-      document.querySelector('.logo-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
-      console.error(e);
+      console.error('錯誤詳情:', e);
+      // 🔥 如果是 LIFF 相關錯誤，導向 LIFF URL
+      if (e.message && e.message.includes('LIFF')) {
+        console.log('LIFF 錯誤，導向 LIFF URL');
+        window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
+        return;
+      }
+      document.querySelector('.logo-container').innerHTML = "<p>初始化失敗：" + e.message + "</p><p>請檢查 console 查看詳細錯誤</p>";
     }
   }
   
   main();
 </script>
-
 
 </body>
 </html>
