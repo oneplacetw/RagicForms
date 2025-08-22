@@ -62,10 +62,19 @@
 <script>
   async function main() {
     try {
-      // 🔥 關鍵修正：檢查是否在 LINE 環境中
-      if (typeof liff === 'undefined') {
-        // 如果 LIFF SDK 未載入，導向到 LIFF URL
-        console.log('LIFF SDK 未載入，導向 LIFF URL');
+      // 🔥 檢查是否已經在導向迴圈中
+      const isRedirecting = sessionStorage.getItem('liff_redirecting');
+      if (isRedirecting) {
+        console.log('偵測到可能的導向迴圈，清除狀態');
+        sessionStorage.removeItem('liff_redirecting');
+      }
+      
+      // 🔥 檢查是否在外部瀏覽器（非 LINE 環境）
+      const isExternalBrowser = !window.navigator.userAgent.includes('Line');
+      
+      if (isExternalBrowser && !isRedirecting) {
+        console.log('在外部瀏覽器中，導向 LIFF URL');
+        sessionStorage.setItem('liff_redirecting', 'true');
         window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
         return;
       }
@@ -73,12 +82,8 @@
       await liff.init({ liffId: "2006833424-0nQE8Jgd" });
       await liff.ready;
       
-      // 🔥 額外檢查：如果不在 LIFF 環境中，導向 LIFF URL
-      if (!liff.isInClient() && !liff.isLoggedIn()) {
-        console.log('不在 LIFF 環境中，導向 LIFF URL');
-        window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
-        return;
-      }
+      // 清除導向標記
+      sessionStorage.removeItem('liff_redirecting');
       
       // 檢查是否是從登入頁面返回
       const urlParams = new URLSearchParams(window.location.search);
@@ -157,12 +162,8 @@
       
     } catch (e) {
       console.error('錯誤詳情:', e);
-      // 🔥 如果是 LIFF 相關錯誤，導向 LIFF URL
-      if (e.message && e.message.includes('LIFF')) {
-        console.log('LIFF 錯誤，導向 LIFF URL');
-        window.location.href = 'https://liff.line.me/2006833424-0nQE8Jgd';
-        return;
-      }
+      // 清除導向標記
+      sessionStorage.removeItem('liff_redirecting');
       document.querySelector('.logo-container').innerHTML = "<p>初始化失敗：" + e.message + "</p><p>請檢查 console 查看詳細錯誤</p>";
     }
   }
