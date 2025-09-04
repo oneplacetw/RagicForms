@@ -255,6 +255,10 @@
         url: ragicUrl,
         external: true
       });
+      // 加上這段：延遲 1 秒自動關閉 LIFF
+setTimeout(() => {
+  liff.closeWindow();
+}, 1000);
     } catch (e) {
       // 錯誤處理：顯示初始化失敗訊息
       const errorContainer = document.querySelector('.logo-container') || document.querySelector('.desktop-container');
