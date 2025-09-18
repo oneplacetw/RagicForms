@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line 登入範例</title>
+</head>
+<body>
+
+    <h1>請使用 Line 登入</h1>
+    <div id="line-login-button"></div>
+
+    <script src="https://www.line-cool.com/line-sdk/line-cool.js"></script>
+    <script>
+        // 設定你的 Line Login 頻道 ID
+        const channelId = '2006833424-8Xx3Q4nk';
+        
+        // 設定你要拋送資料的 Webhook URL
+        const webhookUrl = 'https://kh.oneplace.com.tw/webhook/38f27cdd-2791-4c0d-a2e7-3e5c822874df';
+
+        // 初始化 Line 登入按鈕
+        function initializeLineLogin() {
+            LineCool.setup({
+                channelId: channelId
+            });
+
+            // 在特定元素中顯示登入按鈕
+            LineCool.mount({
+                el: '#line-login-button',
+                scope: 'profile openid',
+                prompt: 'consent',
+                callback: handleLineLoginCallback
+            });
+        }
+
+        // 處理 Line 登入回傳的資訊
+        async function handleLineLoginCallback(result) {
+            if (result.isSuccess) {
+                const userProfile = result.profile;
+                const userId = userProfile.userId;
+                
+                console.log('成功取得 Line UID:', userId);
+                alert('成功取得 Line UID: ' + userId);
+
+                // 準備要拋送的資料
+                const data = {
+                    lineUid: userId,
+                    name: userProfile.displayName
+                };
+
+                // 使用 fetch API 拋送資料到 Webhook
+                try {
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        console.log('資料已成功拋送至 Webhook');
+                        alert('資料已成功拋送至 Webhook');
+                    } else {
+                        console.error('拋送資料到 Webhook 失敗:', response.statusText);
+                        alert('拋送資料到 Webhook 失敗');
+                    }
+                } catch (error) {
+                    console.error('拋送資料時發生錯誤:', error);
+                    alert('拋送資料時發生錯誤');
+                }
+
+            } else {
+                console.error('Line 登入失敗:', result.error);
+                alert('Line 登入失敗');
+            }
+        }
+
+        // 當頁面載入完成時，啟動 Line 登入程序
+        window.addEventListener('DOMContentLoaded', initializeLineLogin);
+    </script>
+
+</body>
+</html>
