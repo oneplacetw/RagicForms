@@ -3,81 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line 登入範例</title>
+    <title>LIFF 取得 UID 範例</title>
 </head>
 <body>
 
-    <h1>請使用 Line 登入</h1>
-    <div id="line-login-button"></div>
+    <h1>正在取得您的 Line ID...</h1>
+    <p id="status-message">請稍候...</p>
 
-    <script src="https://www.line-cool.com/line-sdk/line-cool.js"></script>
+    <script src="https://static.line-scdn.net/liff/2.22.3/liff.js"></script>
     <script>
-        // 設定你的 Line Login 頻道 ID
-        const channelId = '2006833424-8Xx3Q4nk';
+        // 設定你的 LIFF ID
+        const liffId = '2006833424-8Xx3Q4nk';
         
         // 設定你要拋送資料的 Webhook URL
         const webhookUrl = 'https://kh.oneplace.com.tw/webhook/38f27cdd-2791-4c0d-a2e7-3e5c822874df';
 
-        // 初始化 Line 登入按鈕
-        function initializeLineLogin() {
-            LineCool.setup({
-                channelId: channelId
-            });
+        // 頁面元素
+        const statusMessageElement = document.getElementById('status-message');
 
-            // 在特定元素中顯示登入按鈕
-            LineCool.mount({
-                el: '#line-login-button',
-                scope: 'profile openid',
-                prompt: 'consent',
-                callback: handleLineLoginCallback
-            });
+        async function initializeLiff() {
+            try {
+                // 初始化 LIFF 應用程式
+                await liff.init({ liffId: liffId });
+                
+                // 確認是否在外部瀏覽器或未登入
+                if (!liff.isLoggedIn()) {
+                    // 若未登入，引導使用者登入
+                    liff.login();
+                } else {
+                    // 若已登入，取得使用者資訊並拋送至 Webhook
+                    await sendLiffDataToWebhook();
+                }
+            } catch (error) {
+                console.error('LIFF 初始化或登入失敗:', error);
+                statusMessageElement.textContent = 'LIFF 初始化失敗，請確認設定是否正確。';
+            }
         }
 
-        // 處理 Line 登入回傳的資訊
-        async function handleLineLoginCallback(result) {
-            if (result.isSuccess) {
-                const userProfile = result.profile;
-                const userId = userProfile.userId;
-                
-                console.log('成功取得 Line UID:', userId);
-                alert('成功取得 Line UID: ' + userId);
+        async function sendLiffDataToWebhook() {
+            try {
+                // 取得使用者個人資料
+                const profile = await liff.getProfile();
+                const userId = profile.userId;
+
+                console.log('成功取得 LIFF UID:', userId);
+                statusMessageElement.textContent = '成功取得您的 UID，正在傳送資料中...';
 
                 // 準備要拋送的資料
                 const data = {
                     lineUid: userId,
-                    name: userProfile.displayName
+                    name: profile.displayName
                 };
 
                 // 使用 fetch API 拋送資料到 Webhook
-                try {
-                    const response = await fetch(webhookUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
 
-                    if (response.ok) {
-                        console.log('資料已成功拋送至 Webhook');
-                        alert('資料已成功拋送至 Webhook');
-                    } else {
-                        console.error('拋送資料到 Webhook 失敗:', response.statusText);
-                        alert('拋送資料到 Webhook 失敗');
-                    }
-                } catch (error) {
-                    console.error('拋送資料時發生錯誤:', error);
-                    alert('拋送資料時發生錯誤');
+                if (response.ok) {
+                    console.log('資料已成功拋送至 Webhook');
+                    statusMessageElement.textContent = '資料已成功傳送！';
+                } else {
+                    console.error('拋送資料到 Webhook 失敗:', response.statusText);
+                    statusMessageElement.textContent = '傳送資料到 Webhook 失敗。';
                 }
 
-            } else {
-                console.error('Line 登入失敗:', result.error);
-                alert('Line 登入失敗');
+            } catch (error) {
+                console.error('取得使用者資料或拋送資料時發生錯誤:', error);
+                statusMessageElement.textContent = '發生錯誤，請稍後再試。';
             }
         }
 
-        // 當頁面載入完成時，啟動 Line 登入程序
-        window.addEventListener('DOMContentLoaded', initializeLineLogin);
+        // 頁面載入完成時，啟動 LIFF 程序
+        window.addEventListener('load', initializeLiff);
     </script>
 
 </body>
