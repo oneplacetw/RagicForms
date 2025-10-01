@@ -1,6 +1,6 @@
 #屋主需求 - https://liff.line.me/2006833424-920EB8ra
 - Login channel id : 2006833424
-  - Liff app name : /屋主需求 0812 development-department/1  
+  - Liff app name : 屋主需求 0812  
 - 對應ragic路徑
   - 開發部 ➡️ 屋主需求
   - [development-department/1](https://ap13.ragic.com/OnePlaceLiving/development-department/1)
@@ -8,7 +8,7 @@
 
 #房客更新 - https://liff.line.me/2006833424-LyakNG2R
 - Login channel id : 2006833424
-  - Liff app name : /房客資料更新表 0829 harvey/25  
+  - Liff app name : 房客資料更新表 0829  
 - 對應ragic路徑
   - Harvey ➡️ 房客資料表更新
   - [harvey/25](https://ap13.ragic.com/OnePlaceLiving/harvey/25)
@@ -23,7 +23,7 @@
   
 #約看表單 - https://liff.line.me/2006833424-0nQE8Jgd
 - Login channel id : 2006833424
-  - Liff app name : /帶看表單 0828 service-department/73
+  - Liff app name : 帶看表單 0828
 - 對應ragic路徑
   - 服務部 ➡️ 嗨👋填寫一下，我們將會盡快回覆
   - [service-department/73](https://ap13.ragic.com/OnePlaceLiving/service-department/73
