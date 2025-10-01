@@ -59,6 +59,15 @@
   async function main() {
     try {
       await liff.init({ liffId: "2006833424-920EB8ra" });
+            if (!liff.isInClient()) {
+        document.querySelector('.loading-text').textContent = '正在開啟 LINE APP...';
+        window.location.href = `line://app/2006833424-920EB8ra`;
+        setTimeout(() => {
+          document.querySelector('.loading-text').textContent = '請在 LINE 中開啟此連結';
+          document.querySelector('.spinner').style.display = 'none';
+        }, 2000);
+        return;
+      }
       await liff.ready;
 
       if (!liff.isLoggedIn()) {
