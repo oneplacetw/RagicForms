@@ -12,6 +12,7 @@
   <meta property="og:url" content="https://liff.line.me/2002308323-qP9WKbOk">
   <meta property="og:type" content="website">
 
+<!-- 頁面樣式 -->
   <style>
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -36,7 +37,7 @@
     }
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #06C755;
+      border-top: 4px solid #06C755; /* Line綠色 */
       border-radius: 50%;
       width: 30px;
       height: 30px;
@@ -48,6 +49,7 @@
       100% { transform: rotate(360deg); }
     }
   </style>
+  
 </head>
 <body>
   <div class="loading-container">
@@ -58,47 +60,48 @@
   
 <script>
   async function main() {
-    try {
-      await liff.init({ liffId: "2002308323-qP9WKbOk" });
-            if (!liff.isInClient()) {
-        document.querySelector('.loading-text').textContent = '正在開啟 LINE APP...';
-        window.location.href = `line://app/2002308323-qP9WKbOk`;
-        setTimeout(() => {
-          document.querySelector('.loading-text').textContent = '請在 LINE 中開啟此連結';
-          document.querySelector('.spinner').style.display = 'none';
-        }, 2000);
-        return;
-      }
-      await liff.ready;
-
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-
-        const profile = await liff.getProfile();
-        const uid = profile.userId;
-        const target = "https://forms.katchme.life/ltthouse";
-        window.location.href = `${target}?lineUid=${uid}&nickName=${encodeURIComponent(profile.displayName)}`;
-
-        // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
-      liff.openWindow({
-        url: target,
-        external: true
-      });
-
-            setTimeout(() => {
-        liff.closeWindow();
-      }, 1000); // 半秒後關閉 LIFF
-        
-
-        
-      } catch (e) {
-        document.querySelector('.loading-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
-        console.error(e);
-      }
+  try {
+    await liff.init({ liffId: "2002308323-qP9WKbOk" });
+    
+    if (!liff.isInClient()) {
+      document.querySelector('.loading-text').textContent = '正在開啟 LINE APP...';
+      window.location.href = `line://app/2002308323-qP9WKbOk`;
+      setTimeout(() => {
+        document.querySelector('.loading-text').textContent = '請在 LINE 中開啟此連結';
+        document.querySelector('.spinner').style.display = 'none';
+      }, 2000);
+      return;
     }
-    main();
+    
+    await liff.ready;
+    
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    
+    const profile = await liff.getProfile();
+    const uid = profile.userId;
+    const target = `https://forms.katchme.life/ltthouse?lineUid=${uid}&nickName=${encodeURIComponent(profile.displayName)}`;
+    
+    // ✅ 只用 openWindow，在外部瀏覽器開啟
+    liff.openWindow({
+      url: target,
+      external: true
+    });
+    
+    // ✅ 延遲關閉，確保開啟成功
+    setTimeout(() => {
+      liff.closeWindow();
+    }, 500);
+    
+  } catch (e) {
+    document.querySelector('.loading-container').innerHTML = 
+      "<p>初始化失敗：" + e.message + "</p>";
+    console.error(e);
+  }
+}
+main();
   </script>
 </body>
 </html>
