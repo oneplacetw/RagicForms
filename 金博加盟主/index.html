@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -71,6 +70,19 @@ if (!liff.isLoggedIn()) {
         const uid = profile.userId;
         const target = "https://forms.katchme.life/ltthouse";
         window.location.href = `${target}?lineUid=${uid}&nickName=${encodeURIComponent(profile.displayName)}`;
+
+        // ✅ 使用 LIFF 的 openWindow ➜ 強制在 Safari / Chrome 開啟
+      liff.openWindow({
+        url: target,
+        external: true
+      });
+
+            setTimeout(() => {
+        liff.closeWindow();
+      }, 1000); // 半秒後關閉 LIFF
+        
+
+        
       } catch (e) {
         document.querySelector('.loading-container').innerHTML = "<p>初始化失敗：" + e.message + "</p>";
         console.error(e);
