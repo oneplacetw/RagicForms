@@ -56,15 +56,25 @@
   </div>
 
   
-  <script>
-    async function main() {
-      try {
-        await liff.init({ liffId: "2002308323-qP9WKbOk" });
-        await liff.ready;
-if (!liff.isLoggedIn()) {
-  liff.login();
-  return;
-}
+<script>
+  async function main() {
+    try {
+      await liff.init({ liffId: "2002308323-qP9WKbOk" });
+            if (!liff.isInClient()) {
+        document.querySelector('.loading-text').textContent = '正在開啟 LINE APP...';
+        window.location.href = `line://app/2002308323-qP9WKbOk`;
+        setTimeout(() => {
+          document.querySelector('.loading-text').textContent = '請在 LINE 中開啟此連結';
+          document.querySelector('.spinner').style.display = 'none';
+        }, 2000);
+        return;
+      }
+      await liff.ready;
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
 
         const profile = await liff.getProfile();
         const uid = profile.userId;
