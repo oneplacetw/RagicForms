@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>正在驗證身份...</title>
+    <title>驗證中...</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            font-family: -apple-system, sans-serif; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -20,67 +20,68 @@
             border: 4px solid #f3f3f3; 
             border-top: 4px solid #00B900; 
             border-radius: 50%; 
-            width: 40px; 
-            height: 40px; 
+            width: 40px; height: 40px; 
             animation: spin 1s linear infinite; 
             margin: 0 auto 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        p { color: #555; font-size: 16px; }
-    </script>
+        p { color: #666; font-size: 16px; }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="loader"></div>
-        <p>正在為您跳轉至官方帳號...</p>
+        <p>正在為您開啟 LINE 官方帳號...</p>
     </div>
 
     <script>
-        const LINE_OA_URL = "https://line.me/R/ti/p/@oneplace"; // 你的官方帳號連結
-        const N8N_WEBHOOK_URL = "https://kh.oneplace.com.tw/webhook-test/ccb680b7-0a16-4250-a1d8-4ba6ae336bd2";
+        // 設定區
+        const LIFF_ID = "2002308323-th9Qsoxm";
+        const N8N_URL = "https://kh.oneplace.com.tw/webhook/ccb680b7-0a16-4250-a1d8-4ba6ae336bd2";
+        const LINE_OA_URL = "https://line.me/R/ti/p/@oneplace";
 
         async function main() {
-            // 設定一個保險開關：3秒後無論如何都執行跳轉，避免使用者卡死
-            const backupTimer = setTimeout(() => {
+            // 1. 保險機制：若 5 秒內沒完成，強制跳轉回 LINE，避免用戶卡在白畫面
+            const timer = setTimeout(() => {
                 window.location.href = LINE_OA_URL;
-            }, 3000);
+            }, 5000);
 
             try {
-                // 1. 初始化 LIFF
-                await liff.init({ liffId: "2002308323-th9Qsoxm" });
+                // 2. LIFF 初始化
+                await liff.init({ liffId: LIFF_ID });
 
-                // 2. 檢查登入
+                // 3. 登入檢查
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
 
-                // 3. 取得資料
+                // 4. 取得 Profile & 網址參數
                 const profile = await liff.getProfile();
                 const urlParams = new URLSearchParams(window.location.search);
                 const bindingId = urlParams.get('bindingId');
 
+                // 5. 如果有 bindingId，則 POST 給 n8n
                 if (bindingId) {
-                    // 4. 發送至 n8n
-                    await fetch(N8N_WEBHOOK_URL, {
+                    await fetch(N8N_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             lineUid: profile.userId,
                             displayName: profile.displayName,
                             bindingId: bindingId,
-                            source: "GitHub-LIFF"
+                            source: "Ragic-Binding-Flow"
                         }),
-                        keepalive: true // 確保頁面跳轉時請求不會被瀏覽器中斷
+                        keepalive: true // 確保網頁關閉時 fetch 仍能完成
                     });
                 }
 
-                // 5. 成功後清除定時器並跳轉
-                clearTimeout(backupTimer);
+                // 6. 成功後清除計時器並導向 LINE OA
+                clearTimeout(timer);
                 window.location.href = LINE_OA_URL;
 
             } catch (err) {
-                console.error('LIFF Error:', err);
+                console.error("Error:", err);
                 window.location.href = LINE_OA_URL;
             }
         }
