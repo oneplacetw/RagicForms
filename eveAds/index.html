@@ -97,15 +97,24 @@
   const LOGO_URL = "https://r-forms.oneplace.com.tw/green.png";
 
   // 生成 QR Code (動態帶入目前網址，包含 bindingId)
-  function generateQRCode() {
-    // 1. 取得 bindingId 參數
+function generateQRCode() {
+    // 1. 直接取得目前瀏覽器網址列的完整參數 (包含 ?bindingId=...)
     const urlParams = new URLSearchParams(window.location.search);
     const bid = urlParams.get('bindingId');
     
-    // 2. 組成標準 LIFF 連結 (這能觸發手機詢問「是否用 LINE 開啟」)
-    const lineLink = `https://liff.line.me/${LIFF_ID}${bid ? '?bindingId=' + bid : ''}`;
+    // 2. 檢查是否有拿到 bindingId，如果沒有，在 console 報錯方便除錯
+    if (!bid) {
+        console.error("在網址中找不到 bindingId 參數！");
+    }
+
+    // 3. 強制組成包含參數的 LIFF 連結
+    // 這樣手機掃描後，才會開啟帶有參數的網頁，進而觸發 Webhook
+    const lineLink = `https://liff.line.me/${LIFF_ID}?bindingId=${bid || ''}`;
+
+    console.log("生成的 QR Code 連結為:", lineLink);
 
     const qrImg = document.getElementById('qrcode');
+    // 使用 QuickChart 生成
     const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(lineLink)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
     
     qrImg.src = qrApi;
