@@ -98,27 +98,32 @@
 
   // 生成 QR Code (動態帶入目前網址，包含 bindingId)
 function generateQRCode() {
-    // 1. 直接取得目前瀏覽器網址列的完整參數 (包含 ?bindingId=...)
+    // 1. 取得目前網址參數
     const urlParams = new URLSearchParams(window.location.search);
-    const bid = urlParams.get('bindingId');
-    
-    // 2. 檢查是否有拿到 bindingId，如果沒有，在 console 報錯方便除錯
-    if (!bid) {
-        console.error("在網址中找不到 bindingId 參數！");
+    let bid = urlParams.get('bindingId');
+
+    // 2. 清理資料：移除可能誤抓的引號、空白或特殊符號
+    if (bid) {
+        bid = bid.replace(/['"」]/g, '').trim(); 
     }
 
-    // 3. 強制組成包含參數的 LIFF 連結
-    // 這樣手機掃描後，才會開啟帶有參數的網頁，進而觸發 Webhook
-    const lineLink = `https://liff.line.me/${LIFF_ID}?bindingId=${bid || ''}`;
+    // 3. 檢查除錯 (可以在電腦按 F12 檢查 Console)
+    console.log("解析到的 bindingId:", bid);
 
-    console.log("生成的 QR Code 連結為:", lineLink);
+    if (!bid) {
+        alert("警告：網址中缺少 bindingId，請重新從 Ragic 表單跳轉。");
+        return;
+    }
 
+    // 4. 組成正確的 LIFF 連結
+    const lineLink = `https://liff.line.me/${LIFF_ID}?bindingId=${bid}`;
+
+    // 5. 生成 QR Code
     const qrImg = document.getElementById('qrcode');
-    // 使用 QuickChart 生成
     const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(lineLink)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
     
     qrImg.src = qrApi;
-  }
+}
 
   async function main() {
     try {
