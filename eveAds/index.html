@@ -79,10 +79,10 @@
 
   <div class="desktop-container">
     <div class="qr-section">
-      <div class="qr-title">請掃描 QR Code 開啟 LINE</div>
+      <div class="qr-title">請使用 LINE掃描 QR Code 前往官方帳號</div>
       <div class="qr-description">
         為方便作業<br>
-        請使用手機掃描下方 QR Code 前往官方帳號
+        請使用LINE掃描下方 QR Code 前往官方帳號
       </div>
       <div class="qr-container">
         <img id="qrcode" alt="QR Code 加載中...">
@@ -98,11 +98,15 @@
 
   // 生成 QR Code (動態帶入目前網址，包含 bindingId)
   function generateQRCode() {
-    const currentUrl = window.location.href; // 自動抓取包含 ?bindingId=... 的完整網址
-    const qrImg = document.getElementById('qrcode');
+    // 1. 取得 bindingId 參數
+    const urlParams = new URLSearchParams(window.location.search);
+    const bid = urlParams.get('bindingId');
     
-    // 使用 QuickChart API 生成帶有中心 Logo 的 QR Code
-    const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(currentUrl)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
+    // 2. 組成標準 LIFF 連結 (這能觸發手機詢問「是否用 LINE 開啟」)
+    const lineLink = `https://liff.line.me/${LIFF_ID}${bid ? '?bindingId=' + bid : ''}`;
+
+    const qrImg = document.getElementById('qrcode');
+    const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(lineLink)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
     
     qrImg.src = qrApi;
   }
