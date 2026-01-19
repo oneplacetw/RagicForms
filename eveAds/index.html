@@ -38,98 +38,98 @@
   let bid = urlParams.get('bindingId');
   if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, ''); // 強力清理參數
 
-  async function main() {
+async function main() {
 
-    // 判斷：如果是電腦版 (螢幕寬度 > 768)
+    const urlParams = new URLSearchParams(window.location.search);
+
+    let bid = urlParams.get('bindingId');
+
+    if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, '');
+
+
+
+    const ua = navigator.userAgent.toLowerCase();
+
+    const isLine = ua.indexOf("line") > -1;
+
+
+
+    // 1. 電腦版維持顯示 QR Code
 
     if (window.innerWidth >= 768) {
 
-      const qrImg = document.getElementById('qrcode');
-
-      // QR Code 內容：直接指向本頁網址 (包含參數)，讓手機掃描後回到這頁的手機版邏輯
-
-      const targetUrl = window.location.href;
-
-      qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(targetUrl)}&size=250&margin=1&dark=4a5d23`;
-
-      return;
-
-    }
-
-
-
-    // 判斷：如果是手機版
-
-    try {
-
-      await liff.init({ liffId: LIFF_ID });
-
-
-
-      if (!liff.isLoggedIn()) {
-
-        liff.login(); // 強制登入，這會確保抓到 UID
+        generateQRCode();
 
         return;
 
-      }
+    }
 
 
 
-      const profile = await liff.getProfile();
+    // 2. 如果偵測到在外部瀏覽器 (Messenger, FB, IG)
+
+    if (!isLine) {
+
+        // 使用 URL Scheme 強制喚起 LINE App
+
+        // 優先順序：liff:// > line://app/ > https://
+
+        const schemeUrl = `liff://2002308323-th9Qsoxm?bindingId=${bid}`;
+
+        const backupSchemeUrl = `line://app/2002308323-th9Qsoxm?bindingId=${bid}`;
+
+        
+
+        // 嘗試跳轉
+
+        window.location.href = schemeUrl;
+
+        
+
+        // 保險機制：如果 0.5 秒後沒反應，嘗試第二種 Scheme
+
+        setTimeout(() => {
+
+            window.location.href = backupSchemeUrl;
+
+        }, 500);
 
 
 
-      if (bid) {
+        // 如果連 Scheme 都沒反應，才顯示手動導引（如上個版本所述）
 
-        // 發送至 n8n
-
-        await fetch(N8N_URL, {
-
-          method: 'POST',
-
-          headers: { 'Content-Type': 'application/json' },
-
-          body: JSON.stringify({
-
-            lineUid: profile.userId,
-
-            displayName: profile.displayName,
-
-            bindingId: bid,
-
-            source: "Redirect-Flow"
-
-          }),
-
-          keepalive: true
-
-        });
-
-        // 給 Webhook 一點傳輸時間
-
-        await new Promise(res => setTimeout(res, 500));
-
-      }
-
-
-
-      // 最後跳轉到官方帳號
-
-      window.location.href = LINE_OA_URL;
-
-
-
-    } catch (err) {
-
-      console.error(err);
-
-      window.location.href = LINE_OA_URL; // 失敗也跳轉，不卡住使用者
+        return;
 
     }
 
-  }
+    // 3. 已經在 LINE App 內：執行 Webhook 與回填
+    try {
+        await liff.init({ liffId: LIFF_ID });
+        // ... (後續的 liff.login 與 fetch 邏輯保持不變) ...
+        if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+        }
 
+        const profile = await liff.getProfile();
+        if (bid) {
+            await fetch(N8N_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lineUid: profile.userId,
+                    displayName: profile.displayName,
+                    bindingId: bid
+                }),
+                keepalive: true
+            });
+            await new Promise(res => setTimeout(res, 500));
+        }
+        window.location.href = LINE_OA_URL;
+    } catch (err) {
+        window.location.href = LINE_OA_URL;
+    }
+}
 
   main();
 </script>
