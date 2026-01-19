@@ -98,33 +98,27 @@
 
   // 生成 QR Code (動態帶入目前網址，包含 bindingId)
 function generateQRCode() {
-    // 1. 取得目前網址參數
     const urlParams = new URLSearchParams(window.location.search);
     let bid = urlParams.get('bindingId');
 
-    // 2. 清理資料：移除可能誤抓的引號、空白或特殊符號
     if (bid) {
-        bid = bid.replace(/['"」]/g, '').trim(); 
+        // 【核心修正】強力清除所有非數字/字母的雜質，避免出現「 」 」這種符號
+        bid = bid.replace(/[^a-zA-Z0-9]/g, ''); 
     }
 
-    // 3. 檢查除錯 (可以在電腦按 F12 檢查 Console)
-    console.log("解析到的 bindingId:", bid);
-
     if (!bid) {
-        alert("警告：網址中缺少 bindingId，請重新從 Ragic 表單跳轉。");
+        console.error("網址列沒有抓到 bindingId");
         return;
     }
 
-    // 4. 組成正確的 LIFF 連結
-    const lineLink = `https://liff.line.me/${LIFF_ID}?bindingId=${bid}`;
-
-    // 5. 生成 QR Code
+    // 組成給手機掃描用的乾淨連結
+    const lineLink = `https://liff.line.me/2002308323-th9Qsoxm?bindingId=${bid}`;
     const qrImg = document.getElementById('qrcode');
     const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(lineLink)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
     
     qrImg.src = qrApi;
 }
-
+  
   async function main() {
     try {
       // 1. 判斷是否為電腦版
