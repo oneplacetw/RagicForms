@@ -6,11 +6,13 @@
   <title>驗證中...</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    /* 使用你之前的樣式 */
     html, body { margin: 0; padding: 0; height: 100vh; background-color: white; display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif; }
     .desktop-container { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px; }
     .qr-section { background: #f8f9fa; padding: 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    #qrcode { width: 220px; height: 220px; background: white; padding: 10px; border-radius: 10px; }
+    #qrcode { width: 220px; height: 220px; background: white; padding: 10px; border-radius: 10px; margin: 15px 0; }
+    .mobile-loader { text-align: center; padding: 20px; }
+    /* 導引提示樣式 */
+    #manual-guide { display: none; color: #666; font-size: 14px; line-height: 1.6; }
     @media (min-width: 768px) { .desktop-container { display: flex; } .mobile-loader { display: none; } }
   </style>
 </head>
@@ -25,111 +27,91 @@
   </div>
 
   <div class="mobile-loader">
-    <p>身份驗證中，請稍候...</p>
+    <div id="status-text">身份驗證中，請稍候...</div>
+    <div id="manual-guide">
+      <p>若未自動跳轉，請點擊右上方「...」<br>選擇「使用預設瀏覽器開啟」</p>
+      <button onclick="location.reload()" style="padding: 8px 16px; background: #00B900; color: white; border: none; border-radius: 4px;">重試一次</button>
+    </div>
   </div>
 
 <script>
   const LIFF_ID = "2002308323-th9Qsoxm";
   const N8N_URL = "https://kh.oneplace.com.tw/webhook/ccb680b7-0a16-4250-a1d8-4ba6ae336bd2";
   const LINE_OA_URL = "https://line.me/R/ti/p/@oneplace";
+  const LOGO_URL = "https://r-forms.oneplace.com.tw/green.png";
 
-  // 1. 取得網址上的 bindingId (無論電腦或手機)
+  // 解析並清理參數
   const urlParams = new URLSearchParams(window.location.search);
   let bid = urlParams.get('bindingId');
-  if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, ''); // 強力清理參數
+  if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, '');
 
-async function main() {
+  // 電腦版生成 QR Code 函式
+  function generateQRCode() {
+    const targetUrl = window.location.href;
+    const qrImg = document.getElementById('qrcode');
+    // 使用 QuickChart API，確保掃描後回到此網頁的手機版邏輯
+    qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(targetUrl)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
+  }
 
-    const urlParams = new URLSearchParams(window.location.search);
-
-    let bid = urlParams.get('bindingId');
-
-    if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, '');
-
-
-
+  async function main() {
     const ua = navigator.userAgent.toLowerCase();
-
     const isLine = ua.indexOf("line") > -1;
 
-
-
-    // 1. 電腦版維持顯示 QR Code
-
+    // 1. 電腦版
     if (window.innerWidth >= 768) {
-
-        generateQRCode();
-
-        return;
-
+      generateQRCode();
+      return;
     }
 
-
-
-    // 2. 如果偵測到在外部瀏覽器 (Messenger, FB, IG)
-
+    // 2. 外部瀏覽器環境 (Messenger, FB, IG)
     if (!isLine) {
+      const schemeUrl = `liff://2002308323-th9Qsoxm?bindingId=${bid}`;
+      const backupSchemeUrl = `line://app/2002308323-th9Qsoxm?bindingId=${bid}`;
+      
+      // 嘗試透過 URL Scheme 強制啟動 LINE
+      window.location.href = schemeUrl;
+      
+      setTimeout(() => { window.location.href = backupSchemeUrl; }, 500);
 
-        // 使用 URL Scheme 強制喚起 LINE App
-
-        // 優先順序：liff:// > line://app/ > https://
-
-        const schemeUrl = `liff://2002308323-th9Qsoxm?bindingId=${bid}`;
-
-        const backupSchemeUrl = `line://app/2002308323-th9Qsoxm?bindingId=${bid}`;
-
-        
-
-        // 嘗試跳轉
-
-        window.location.href = schemeUrl;
-
-        
-
-        // 保險機制：如果 0.5 秒後沒反應，嘗試第二種 Scheme
-
-        setTimeout(() => {
-
-            window.location.href = backupSchemeUrl;
-
-        }, 500);
-
-
-
-        // 如果連 Scheme 都沒反應，才顯示手動導引（如上個版本所述）
-
-        return;
-
+      // 3秒後顯示手動導引（以防萬一手機沒裝 LINE 或 Scheme 被攔截）
+      setTimeout(() => {
+        document.getElementById('status-text').style.display = 'none';
+        document.getElementById('manual-guide').style.display = 'block';
+      }, 3000);
+      return;
     }
 
-    // 3. 已經在 LINE App 內：執行 Webhook 與回填
+    // 3. LINE App 內部環境
     try {
-        await liff.init({ liffId: LIFF_ID });
-        // ... (後續的 liff.login 與 fetch 邏輯保持不變) ...
-        if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-        }
+      await liff.init({ liffId: LIFF_ID });
+      
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
 
-        const profile = await liff.getProfile();
-        if (bid) {
-            await fetch(N8N_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lineUid: profile.userId,
-                    displayName: profile.displayName,
-                    bindingId: bid
-                }),
-                keepalive: true
-            });
-            await new Promise(res => setTimeout(res, 500));
-        }
-        window.location.href = LINE_OA_URL;
+      const profile = await liff.getProfile();
+      if (bid) {
+        await fetch(N8N_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lineUid: profile.userId,
+            displayName: profile.displayName,
+            bindingId: bid
+          }),
+          keepalive: true
+        });
+        // 確保 fetch 完成的時間
+        await new Promise(res => setTimeout(res, 500));
+      }
+      // 導向官方帳號
+      window.location.href = LINE_OA_URL;
     } catch (err) {
-        window.location.href = LINE_OA_URL;
+      console.error(err);
+      window.location.href = LINE_OA_URL;
     }
-}
+  }
 
   main();
 </script>
