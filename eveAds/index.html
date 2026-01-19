@@ -2,165 +2,86 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>正在驗證身份...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>驗證中...</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
-    /* 全域樣式設定 */
-    html, body {
-      margin: 0; padding: 0; height: 100vh;
-      background-color: white;
-      display: flex; justify-content: center; align-items: center;
-      box-sizing: border-box; font-family: Arial, sans-serif;
-    }
-
-    /* 手機版：Logo 動畫容器 */
-    .logo-container {
-      position: relative;
-      width: 280px; height: 156px;
-      max-width: 90vw;
-    }
-
-    .green-logo, .gray-logo {
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%; object-fit: contain; display: block;
-    }
-
-    .gray-logo {
-      z-index: 2; clip-path: inset(0 100% 0 0);
-      animation: revealLogo 1s ease-out forwards;
-      animation-delay: 0.5s;
-    }
-
-    .green-logo { z-index: 1; }
-
-    @keyframes revealLogo {
-      0% { clip-path: inset(0 100% 0 0); }
-      100% { clip-path: inset(0 0% 0 0); }
-    }
-
-    /* 電腦版：QR code 介面 */
-    .desktop-container {
-      display: none; /* 預設隱藏 */
-      flex-direction: column; align-items: center; text-align: center;
-      padding: 40px; max-width: 500px;
-    }
-
-    .qr-section {
-      background: #f8f9fa; padding: 30px;
-      border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin: 20px 0;
-    }
-
-    .qr-title { color: #333; font-size: 20px; margin-bottom: 15px; font-weight: bold; }
-    .qr-description { color: #666; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
-
-    .qr-container {
-      position: relative; display: inline-block;
-      background: white; padding: 15px; border-radius: 10px;
-    }
-
-    #qrcode { width: 200px; height: 200px; display: block; }
-
-    /* 媒體查詢：電腦版顯示 QR Code */
-    @media (min-width: 768px) {
-      .logo-container { display: none; }
-      .desktop-container { display: flex; }
-    }
+    /* 使用你之前的樣式 */
+    html, body { margin: 0; padding: 0; height: 100vh; background-color: white; display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif; }
+    .desktop-container { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px; }
+    .qr-section { background: #f8f9fa; padding: 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    #qrcode { width: 220px; height: 220px; background: white; padding: 10px; border-radius: 10px; }
+    @media (min-width: 768px) { .desktop-container { display: flex; } .mobile-loader { display: none; } }
   </style>
 </head>
 <body>
 
-  <div class="logo-container">
-    <img class="gray-logo" src="https://r-forms.oneplace.com.tw/gray.png" alt="Logo Gray">
-    <img class="green-logo" src="https://r-forms.oneplace.com.tw/green.png" alt="Logo Green">
-  </div>
-
   <div class="desktop-container">
     <div class="qr-section">
-      <div class="qr-title">請使用 LINE掃描 QR Code 前往官方帳號</div>
-      <div class="qr-description">
-        為方便作業<br>
-        請使用LINE掃描下方 QR Code 前往官方帳號
-      </div>
-      <div class="qr-container">
-        <img id="qrcode" alt="QR Code 加載中...">
-      </div>
+      <h3>請掃描 QR Code 開啟 LINE</h3>
+      <p>請使用 LINE 內建掃描器以獲得最佳體驗</p>
+      <img id="qrcode" alt="QR Code 加載中...">
     </div>
+  </div>
+
+  <div class="mobile-loader">
+    <p>身份驗證中，請稍候...</p>
   </div>
 
 <script>
   const LIFF_ID = "2002308323-th9Qsoxm";
   const N8N_URL = "https://kh.oneplace.com.tw/webhook-test/ccb680b7-0a16-4250-a1d8-4ba6ae336bd2";
   const LINE_OA_URL = "https://line.me/R/ti/p/@oneplace";
-  const LOGO_URL = "https://r-forms.oneplace.com.tw/green.png";
 
-  // 生成 QR Code (動態帶入目前網址，包含 bindingId)
-function generateQRCode() {
-    const urlParams = new URLSearchParams(window.location.search);
-    let bid = urlParams.get('bindingId');
+  // 1. 取得網址上的 bindingId (無論電腦或手機)
+  const urlParams = new URLSearchParams(window.location.search);
+  let bid = urlParams.get('bindingId');
+  if (bid) bid = bid.replace(/[^a-zA-Z0-9]/g, ''); // 強力清理參數
 
-    if (bid) {
-        // 【核心修正】強力清除所有非數字/字母的雜質，避免出現「 」 」這種符號
-        bid = bid.replace(/[^a-zA-Z0-9]/g, ''); 
-    }
-
-    if (!bid) {
-        console.error("網址列沒有抓到 bindingId");
-        return;
-    }
-
-    // 組成給手機掃描用的乾淨連結
-    const lineLink = `https://liff.line.me/2002308323-th9Qsoxm?bindingId=${bid}`;
-    const qrImg = document.getElementById('qrcode');
-    const qrApi = `https://quickchart.io/qr?text=${encodeURIComponent(lineLink)}&size=250&centerImageUrl=${encodeURIComponent(LOGO_URL)}&margin=1&dark=4a5d23`;
-    
-    qrImg.src = qrApi;
-}
-  
   async function main() {
-    try {
-      // 1. 判斷是否為電腦版
-      if (window.innerWidth >= 768) {
-        generateQRCode();
-        return;
-      }
+    // 判斷：如果是電腦版 (螢幕寬度 > 768)
+    if (window.innerWidth >= 768) {
+      const qrImg = document.getElementById('qrcode');
+      // QR Code 內容：直接指向本頁網址 (包含參數)，讓手機掃描後回到這頁的手機版邏輯
+      const targetUrl = window.location.href;
+      qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(targetUrl)}&size=250&margin=1&dark=4a5d23`;
+      return;
+    }
 
-      // 2. 手機版：執行 LIFF 邏輯
+    // 判斷：如果是手機版
+    try {
       await liff.init({ liffId: LIFF_ID });
 
       if (!liff.isLoggedIn()) {
-        liff.login();
+        liff.login(); // 強制登入，這會確保抓到 UID
         return;
       }
 
       const profile = await liff.getProfile();
-      const urlParams = new URLSearchParams(window.location.search);
-      const bindingId = urlParams.get('bindingId');
 
-      if (bindingId) {
-        // 發送資料給 n8n
+      if (bid) {
+        // 發送至 n8n
         await fetch(N8N_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             lineUid: profile.userId,
             displayName: profile.displayName,
-            bindingId: bindingId,
-            source: "Desktop-QR-Flow"
+            bindingId: bid,
+            source: "Redirect-Flow"
           }),
           keepalive: true
         });
+        // 給 Webhook 一點傳輸時間
+        await new Promise(res => setTimeout(res, 500));
       }
 
-      // 跳轉回 LINE 官方帳號
+      // 最後跳轉到官方帳號
       window.location.href = LINE_OA_URL;
 
-    } catch (e) {
-      console.error('Error:', e);
-      // 錯誤時至少確保手機版能跳轉
-      if (window.innerWidth < 768) window.location.href = LINE_OA_URL;
+    } catch (err) {
+      console.error(err);
+      window.location.href = LINE_OA_URL; // 失敗也跳轉，不卡住使用者
     }
   }
 
