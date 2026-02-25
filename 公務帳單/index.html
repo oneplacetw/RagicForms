@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting...</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="信用卡快速申報">
+  <meta property="og:description" content="請透過 LINE 開啟此表單">
+  <meta property="og:type" content="website">
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+    }
+
+    .logo-container {
+      position: relative;
+      width: 280px;
+      height: 156px;
+      max-width: 90vw;
+    }
+
+    .green-logo,
+    .gray-logo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .gray-logo {
+      z-index: 2;
+      clip-path: inset(0 100% 0 0);
+      animation: revealLogo 1s ease-out forwards;
+      animation-delay: 0.5s;
+    }
+
+    .green-logo {
+      z-index: 1;
+    }
+
+    @keyframes revealLogo {
+      0% {
+        clip-path: inset(0 100% 0 0);
+      }
+
+      100% {
+        clip-path: inset(0 0% 0 0);
+      }
+    }
+
+    /* 電腦版 QR code */
+    .desktop-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+    }
+
+    .qr-section {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      margin: 20px 0;
+    }
+
+    .qr-title {
+      color: #333;
+      font-size: 20px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .qr-description {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .desktop-logo {
+      width: 160px;
+      height: auto;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+
+    @media (min-width: 768px) {
+      .logo-container {
+        display: none;
+      }
+
+      .desktop-container {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 手機版：Logo 動畫 -->
+  <div class="logo-container">
+    <img class="gray-logo" src="https://r-forms.oneplace.com.tw/gray.png" alt="Logo Gray">
+    <img class="green-logo" src="https://r-forms.oneplace.com.tw/green.png" alt="Logo Green">
+  </div>
+
+  <!-- 電腦版：QR code -->
+  <div class="desktop-container">
+    <img class="desktop-logo" src="https://r-forms.oneplace.com.tw/gray.png" alt="Logo">
+    <div class="qr-section">
+      <div class="qr-title">請掃描 QR Code 開啟 LINE</div>
+      <div class="qr-description">
+        請使用手機打開 LINE 應用程式，<br>
+        掃描下方 QR Code 即可開始填寫
+      </div>
+      <img id="qrcode" style="width:200px;height:200px;border-radius:15px;display:block;margin:0 auto;" alt="QR Code">
+    </div>
+  </div>
+
+  <script>
+    // 表單頁網址（card.html 的實際位置）
+    const CARD_URL = 'https://site.oneplace.com.tw/BUload.html';
+
+    function generateQRCode() {
+      const liffUrl = 'https://liff.line.me/2009196310-5Bkeiw5e';
+      const qrImg = document.getElementById('qrcode');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(liffUrl)}&color=4a5d23&bgcolor=ffffff&format=png`;
+      qrImg.onerror = () => {
+        qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(liffUrl)}&size=200&margin=1&dark=4a5d23`;
+      };
+    }
+
+    async function main() {
+      // 電腦版直接顯示 QR code
+      if (window.innerWidth >= 768) {
+        generateQRCode();
+        return;
+      }
+
+      try {
+        await liff.init({ liffId: '2009196310-5Bkeiw5e' });
+        await liff.ready;
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        const uid = profile.userId;
+
+        // Logo 動畫至少跑 1.5 秒
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // 跳轉到表單頁，帶入 lineUid
+        const targetUrl = `${CARD_URL}?lineUid=${encodeURIComponent(uid)}`;
+        liff.openWindow({ url: targetUrl, external: false });
+
+        // 延遲關閉 LIFF
+        setTimeout(() => liff.closeWindow(), 1000);
+
+      } catch (e) {
+        console.error('LIFF error:', e);
+        document.querySelector('.logo-container').innerHTML =
+          `<p style="color:#666;font-size:14px;text-align:center;">初始化失敗，請重新整理</p>`;
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', main);
+    } else {
+      main();
+    }
+  </script>
+</body>
+
+</html>
