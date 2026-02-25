@@ -170,7 +170,7 @@
 
         // 跳轉到表單頁，帶入 lineUid
         const targetUrl = `${CARD_URL}?lineUid=${encodeURIComponent(uid)}`;
-        liff.openWindow({ url: targetUrl, external: false });
+        liff.openWindow({ url: targetUrl, external: true });
 
         // 延遲關閉 LIFF
         setTimeout(() => liff.closeWindow(), 1000);
